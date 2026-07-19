@@ -14,6 +14,8 @@ import concurrent.futures
 from functools import partial
 from pathlib import Path
 
+from agno.team.mode import TeamMode
+
 # ── Fix encodage Windows ─────────────────────────────────────────────────────
 # Windows utilise cp1252 par defaut : les caracteres non-latins (chinois, emoji...)
 # generes par certains modeles (Qwen, etc.) crashent le logger Rich et les print().
@@ -54,6 +56,7 @@ from teams.test.test_team import build_test_team
 from teams.doc.doc_team import build_doc_team
 from teams.devops.devops_team import build_devops_team
 from teams.security.security_team import build_security_team
+from core.spec_bridge import build_task_brief, group_tasks_by_team, mark_tasks_completed, parse_tasks, tasks_summary
 
 
 # ---------------------------------------------------------------------------
@@ -847,6 +850,128 @@ def _load_speckit_implementation_context() -> str:
         "- Execute uniquement le plan et les taches deja fournis.\n"
         "- Si la demande depasse le contenu existant, signale le manque de couverture au lieu de replanifier.\n"
     )
+
+
+def _build_team_for_bridge(team_hint: str):
+    if team_hint == "frontend":
+        return build_frontend_team(mode=TeamMode.coordinate)
+    if team_hint == "backend":
+        return build_backend_team(mode=TeamMode.coordinate)
+    if team_hint == "db":
+        return build_db_team(mode=TeamMode.coordinate)
+    if team_hint == "test":
+        return build_test_team()
+    if team_hint == "doc":
+        return build_doc_team()
+    if team_hint == "devops":
+        return build_devops_team()
+    if team_hint == "security":
+        return build_security_team()
+    return build_backend_team(mode=TeamMode.coordinate)
+
+
+def _save_team_output(team_hint: str, response_text: str, target_dir: Path) -> list[str]:
+    if team_hint == "frontend":
+        return _save_frontend_output(response_text, target_dir)
+    if team_hint == "backend":
+        return _save_backend_output(response_text, target_dir)
+    if team_hint == "db":
+        return _save_db_output(response_text, target_dir)
+    if team_hint == "doc":
+        return _save_doc_output(response_text, target_dir)
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    blocks = _extract_code_blocks(response_text)
+    saved: list[str] = []
+    for lang, code in blocks.items():
+        path = target_dir / f"file.{lang}"
+        path.write_text(code, encoding="utf-8")
+        saved.append(str(path))
+    return saved
+
+
+def run_implementation(
+    spec_path: str,
+    plan_path: str,
+    tasks_path: str,
+    feature_dir: str,
+    mode: str = "bridge",
+):
+    """Execute a Spec Kit implementation bridge from existing artifacts."""
+    spec_file = Path(spec_path)
+    plan_file = Path(plan_path)
+    tasks_file = Path(tasks_path)
+    feature_dir_path = Path(feature_dir)
+
+    if not spec_file.exists() or not plan_file.exists() or not tasks_file.exists():
+        return {
+            "status": "error",
+            "message": "Missing spec, plan, or tasks artifact.",
+            "spec_path": str(spec_file),
+            "plan_path": str(plan_file),
+            "tasks_path": str(tasks_file),
+        }
+
+    spec_text = spec_file.read_text(encoding="utf-8")
+    plan_text = plan_file.read_text(encoding="utf-8")
+    tasks_text = tasks_file.read_text(encoding="utf-8")
+    tasks = parse_tasks(tasks_file)
+
+    if not tasks:
+        return {
+            "status": "error",
+            "message": "No executable tasks found in tasks.md.",
+            "feature_dir": str(feature_dir_path),
+        }
+
+    bridge_output_dir = Path("output") / "bridge" / feature_dir_path.name
+    grouped = group_tasks_by_team(tasks)
+    completed_task_ids: set[str] = set()
+    saved_artifacts: dict[str, list[str]] = {}
+    task_results: list[dict[str, str]] = []
+
+    for team_hint, grouped_tasks in grouped.items():
+        team = _build_team_for_bridge(team_hint)
+        team_output_parts: list[str] = []
+
+        for task in grouped_tasks:
+            task_prompt = build_task_brief(
+                task=task,
+                spec_text=spec_text,
+                plan_text=plan_text,
+                tasks_text=tasks_text,
+                feature_dir=str(feature_dir_path),
+            )
+            response = _run_team(team, task_prompt)
+            task_results.append(
+                {
+                    "task_id": task.task_id,
+                    "team": team_hint,
+                    "status": "completed" if response and "[ERREUR]" not in response and "[ATTENTION]" not in response else "blocked",
+                }
+            )
+            if response and "[ERREUR]" not in response:
+                completed_task_ids.add(task.task_id)
+                team_output_parts.append(response)
+
+        if team_output_parts:
+            combined_output = "\n\n".join(team_output_parts)
+            saved_artifacts[team_hint] = _save_team_output(team_hint, combined_output, bridge_output_dir / team_hint)
+
+    changed_tasks = mark_tasks_completed(tasks_file, completed_task_ids)
+
+    return {
+        "status": "ok",
+        "mode": mode,
+        "feature_dir": str(feature_dir_path),
+        "bridge_output_dir": str(bridge_output_dir),
+        "task_summary": tasks_summary(tasks),
+        "tasks_total": len(tasks),
+        "tasks_completed": len(completed_task_ids),
+        "changed_tasks": changed_tasks,
+        "task_results": task_results,
+        "saved_artifacts": saved_artifacts,
+    }
 
 
 # ---------------------------------------------------------------------------

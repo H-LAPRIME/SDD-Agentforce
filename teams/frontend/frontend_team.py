@@ -22,7 +22,7 @@ from teams.frontend.agents.django_agent import build_django_frontend_agent
 from teams.frontend.agents.express_agent import build_express_frontend_agent
 
 
-def build_frontend_team() -> Team:
+def build_frontend_team(mode: TeamMode = TeamMode.route) -> Team:
     """
     Build the Agno team focused on frontend delivery.
 
@@ -66,11 +66,12 @@ def build_frontend_team() -> Team:
     return Team(
         name="Frontend Engineering Team",
         description="Equipe Agno specialisee dans la conception, l'implementation et la verification frontend.",
-        mode=TeamMode.route,
+        mode=mode,
         model=get_model(role="team", team="frontend"),
         members=members,
         instructions=[
             "Selectionne l'agent le plus adapte pour produire le frontend final, puis applique les controles VisualQAAgent et AccessibilityAgent avant de repondre." if RUN_PROFILE != "fast" else "Selectionne l'agent le plus adapte et produis le frontend directement.",
+            "En mode bridge, privilegier une reponse complete et exploitable plutot qu'un simple résumé.",
             "Pour une landing page simple, retourner preferentiellement deux blocs markdown: ```html``` pour index.html et ```javascript``` pour main.js.",
             "Ne pas gerer toi-meme l'ordre ou le contenu des balises <script> de chargement (React/ReactDOM/Tailwind/Babel).",
             "Verifier le runtime avant sortie: root DOM present, ordre des scripts correct, assets critiques valides, CSP compatible.",

@@ -20,7 +20,7 @@ from teams.backend.agents.sse_agent import build_sse_agent
 from teams.backend.agents.background_jobs_agent import build_background_jobs_agent
 
 
-def build_backend_team() -> Team:
+def build_backend_team(mode: TeamMode = TeamMode.route) -> Team:
     """Construit une équipe Agno orientée développement backend."""
     members = [
         build_backend_structure_agent(),
@@ -44,12 +44,13 @@ def build_backend_team() -> Team:
     return Team(
         name="Backend Engineering Team",
         description="Équipe Agno spécialisée dans la conception et l'implémentation backend.",
-        mode=TeamMode.route,
+        mode=mode,
         model=get_model(role="team", team="backend"),
         members=members,
         instructions=[
             "Selectionne l'agent le plus adapte (ex: ExpressAgent ou DjangoAgent) pour realiser le backend.",
             "L'agent selectionne doit directement renvoyer le code final en markdown.",
+            "En mode bridge, ne pas produire un plan: retourner directement une implementation exploitable.",
         ],
         markdown=True,
     )

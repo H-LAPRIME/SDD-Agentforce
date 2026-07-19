@@ -13,7 +13,7 @@ from teams.db.agents.migration_agent import build_migration_agent
 from teams.db.agents.schema_designer_agent import build_schema_designer_agent
 
 
-def build_db_team() -> Team:
+def build_db_team(mode: TeamMode = TeamMode.route) -> Team:
     """Construit une équipe Agno orientée conception et gestion des bases de données."""
     members = [
         build_schema_designer_agent(),
@@ -30,13 +30,14 @@ def build_db_team() -> Team:
     return Team(
         name="Database Engineering Team",
         description="Équipe Agno spécialisée dans la conception, la gestion et l'optimisation des bases de données.",
-        mode=TeamMode.route,  # Route vers le spécialiste DB exact : Postgres, Mongo, Redis...
+        mode=mode,  # Route vers le spécialiste DB exact : Postgres, Mongo, Redis...
         model=get_model(role="team", team="db"),
         members=members,
         instructions=[
             "Coordonner le travail de modélisation et d'accès aux données.",
             "Choisir le bon type de base de données selon les besoins : SQL, NoSQL, vectoriel, cache.",
             "Produire des schémas cohérents, des migrations réversibles et des requêtes optimisées.",
+            "En mode bridge, agrèger une réponse directe sans tenter de reformuler le plan.",
         ],
         markdown=True,
     )

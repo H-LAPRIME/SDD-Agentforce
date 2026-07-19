@@ -13,7 +13,6 @@ AgentForge is a Python-based multi-agent studio for generating software projects
 ## Project Layout
 
 ```text
-themes/                 Specialized agent teams by domain
 project_agent.py        Main orchestration entrypoint
 core/                   Shared config, model routing, skills, and tools
 teams/                  Specialized agent teams by domain
@@ -83,6 +82,13 @@ The lifecycle is:
 4. `implement`
 
 The implementation phase is intentionally locked to existing `plan.md` and `tasks.md` artifacts when they are present.
+
+## MCP Bridge
+
+This repository now exposes a local MCP tool, `agentforge_implement`, through `core/mcp_server.py`.
+It reads existing `spec.md`, `plan.md`, and `tasks.md` artifacts, parses `tasks.md` for team hints, and routes execution through AgentForge without re-planning.
+
+Use `.vscode/mcp.json` to register the server in VS Code/Copilot.
 
 ## Notes
 
