@@ -2,7 +2,7 @@
 
 # ── Core framework ───────────────────────────────────────────────────────────
 agno>=1.4.0
-mcp[cli]>=1.0.0         # requis pour les outils MCP et sessions de protocole
+mcp[cli]>=1.28,<2.0      # requis pour les outils MCP et sessions de protocole
 
 # ── LLM / API ────────────────────────────────────────────────────────────────
 openai>=1.30.0          # requis par agno.models.openai.like (OpenAILike)

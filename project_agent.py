@@ -56,7 +56,7 @@ from teams.test.test_team import build_test_team
 from teams.doc.doc_team import build_doc_team
 from teams.devops.devops_team import build_devops_team
 from teams.security.security_team import build_security_team
-from core.spec_bridge import build_task_brief, group_tasks_by_team, mark_tasks_completed, parse_tasks, tasks_summary
+from core.spec_bridge import build_team_brief, group_tasks_by_team, mark_tasks_completed, parse_tasks, tasks_summary
 
 
 # ---------------------------------------------------------------------------
@@ -932,31 +932,28 @@ def run_implementation(
 
     for team_hint, grouped_tasks in grouped.items():
         team = _build_team_for_bridge(team_hint)
-        team_output_parts: list[str] = []
+        task_prompt = build_team_brief(
+            tasks=grouped_tasks,
+            spec_text=spec_text,
+            plan_text=plan_text,
+            tasks_text=tasks_text,
+            feature_dir=str(feature_dir_path),
+        )
+        response = _run_team(team, task_prompt)
+        team_ok = bool(response and "[ERREUR]" not in response and "[ATTENTION]" not in response)
 
         for task in grouped_tasks:
-            task_prompt = build_task_brief(
-                task=task,
-                spec_text=spec_text,
-                plan_text=plan_text,
-                tasks_text=tasks_text,
-                feature_dir=str(feature_dir_path),
-            )
-            response = _run_team(team, task_prompt)
             task_results.append(
                 {
                     "task_id": task.task_id,
                     "team": team_hint,
-                    "status": "completed" if response and "[ERREUR]" not in response and "[ATTENTION]" not in response else "blocked",
+                    "status": "completed" if team_ok else "blocked",
                 }
             )
-            if response and "[ERREUR]" not in response:
-                completed_task_ids.add(task.task_id)
-                team_output_parts.append(response)
 
-        if team_output_parts:
-            combined_output = "\n\n".join(team_output_parts)
-            saved_artifacts[team_hint] = _save_team_output(team_hint, combined_output, bridge_output_dir / team_hint)
+        if team_ok:
+            completed_task_ids.update(task.task_id for task in grouped_tasks)
+            saved_artifacts[team_hint] = _save_team_output(team_hint, response, bridge_output_dir / team_hint)
 
     changed_tasks = mark_tasks_completed(tasks_file, completed_task_ids)
 

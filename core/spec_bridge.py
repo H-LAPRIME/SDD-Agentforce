@@ -142,6 +142,45 @@ def build_task_brief(
     )
 
 
+def build_team_brief(
+    *,
+    tasks: list[ParsedTask],
+    spec_text: str,
+    plan_text: str,
+    tasks_text: str,
+    feature_dir: str,
+) -> str:
+    task_lines = []
+    for task in tasks:
+        task_lines.append(f"- {task.task_id} | {task.phase or 'unknown'} | {task.description}")
+
+    return (
+        f"Feature directory: {feature_dir}\n"
+        f"Team hint: {tasks[0].team_hint if tasks else 'backend'}\n"
+        f"Tasks count: {len(tasks)}\n\n"
+        "Hard constraints:\n"
+        "- Do not create a new execution plan.\n"
+        "- Do not split or rename tasks.\n"
+        "- Execute the listed tasks in order within a single response.\n"
+        "- Use the provided spec, plan, and tasks as the only source of truth.\n"
+        "- If a task is blocked by missing context, report the blocker explicitly.\n\n"
+        "tasks to execute\n"
+        "-----------------\n"
+        + "\n".join(task_lines)
+        + "\n\n"
+        "spec.md\n"
+        "--------\n"
+        f"{spec_text}\n\n"
+        "plan.md\n"
+        "--------\n"
+        f"{plan_text}\n\n"
+        "tasks.md\n"
+        "--------\n"
+        f"{tasks_text}\n\n"
+        "Return implementation-ready output for the team as a batch, not one task at a time."
+    )
+
+
 def mark_tasks_completed(tasks_path: str | Path, completed_ids: set[str]) -> list[str]:
     path = Path(tasks_path)
     if not path.exists() or not completed_ids:

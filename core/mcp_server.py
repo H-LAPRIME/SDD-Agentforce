@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from mcp.server import FastMCP
+from mcp.server.fastmcp import FastMCP
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,4 +31,4 @@ def agentforge_implement(spec_path: str, plan_path: str, tasks_path: str, featur
 
 
 if __name__ == "__main__":
-    mcp.run("stdio")
+    mcp.run(transport="stdio")
