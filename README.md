@@ -1,4 +1,4 @@
-# AgentForge
+# SDD-Agentforce
 
 AgentForge is a Python-based multi-agent studio for generating software projects with specialized agent teams. It detects the requested stack, routes work to frontend, backend, database, test, documentation, DevOps, and security teams, then writes the generated output into the `output/` workspace.
 
@@ -13,6 +13,7 @@ AgentForge is a Python-based multi-agent studio for generating software projects
 ## Project Layout
 
 ```text
+themes/                 Specialized agent teams by domain
 project_agent.py        Main orchestration entrypoint
 core/                   Shared config, model routing, skills, and tools
 teams/                  Specialized agent teams by domain
@@ -88,4 +89,3 @@ The implementation phase is intentionally locked to existing `plan.md` and `task
 - `output/` is used for generated artifacts.
 - Local Python caches, virtual environments, and JavaScript dependencies are ignored through `.gitignore`.
 - The repo is designed to be extended with additional specialized teams and skills.
-
