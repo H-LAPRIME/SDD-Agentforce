@@ -1,0 +1,14 @@
+# AgentForge — Dependencies
+
+# ── Core framework ───────────────────────────────────────────────────────────
+agno>=1.4.0
+mcp[cli]>=1.0.0         # requis pour les outils MCP et sessions de protocole
+
+# ── LLM / API ────────────────────────────────────────────────────────────────
+openai>=1.30.0          # requis par agno.models.openai.like (OpenAILike)
+
+# ── Environment & config ─────────────────────────────────────────────────────
+python-dotenv>=1.0.0    # chargement du fichier .env
+
+# ── Specs / Stack detection ───────────────────────────────────────────────────
+pyyaml>=6.0.0           # lecture/écriture de detected_stack.yaml
